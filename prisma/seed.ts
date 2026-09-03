@@ -129,7 +129,45 @@ async function main() {
     }
   }
 
-  console.log(`Seeded products successfully:\n- ${iphone.name}\n- ${samsung.name}\n- ${pixel.name}`);
+  // 4. iPhone 16
+  const iphone16 = await prisma.product.create({
+    data: {
+      name: "iPhone 16",
+      slug: "iphone-16",
+      brand: "Apple",
+      description: "iPhone 16 features the A18 chip, Camera Control button, 48MP Fusion camera, and Action button — all in a beautiful aluminium design with iOS 18.",
+    }
+  });
+
+  const i16Storages = [
+    { storage: "128GB", extraPrice: 0 },
+    { storage: "256GB", extraPrice: 10000 },
+  ];
+  const i16Colors = [
+    { color: "Black", img: "/products/ip_1.webp , /products/ip2.webp , /products/ip3.webp , /products/ip4.webp , /products/ip5.webp" },
+    { color: "Ultramarine", img: "/products/ipb1.webp , /products/ipb2.webp , /products/ipb3.webp , /products/ipb4.webp , /products/ipb5.webp" },
+  ];
+
+  for (const s of i16Storages) {
+    for (const c of i16Colors) {
+      const price = 79900 + s.extraPrice;
+      await prisma.variant.create({
+        data: {
+          productId: iphone16.id,
+          storage: s.storage,
+          color: c.color,
+          mrp: price + 5000,
+          price,
+          imageUrl: c.img,
+          emiPlans: { create: getEmiPlans(price) },
+        },
+      });
+    }
+  }
+
+  console.log(
+    `Seeded products successfully:\n- ${iphone.name}\n- ${samsung.name}\n- ${pixel.name}\n- ${iphone16.name}`
+  );
 }
 
 main()
@@ -140,3 +178,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

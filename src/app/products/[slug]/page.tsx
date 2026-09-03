@@ -224,6 +224,101 @@ function Toast({
   );
 }
 
+/** Confirmation modal */
+function ConfirmModal({
+  product,
+  variant,
+  plan,
+  onConfirm,
+  onCancel,
+}: {
+  product: Product;
+  variant: Variant;
+  plan: EmiPlan;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const total = plan.monthlyAmount * plan.tenureMonths;
+  const net = plan.cashback ? total - plan.cashback : total;
+
+  function fmt(n: number) {
+    return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
+  }
+
+  const variantLabel = [variant.storage, variant.color].filter(Boolean).join(" · ");
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+          <h2 className="text-base font-bold text-gray-900">Confirm your plan</h2>
+          <button onClick={onCancel} className="text-gray-400 hover:text-gray-700 transition-colors">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5">
+          {/* Product row */}
+          <div className="mb-5 rounded-xl bg-gray-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{product.brand}</p>
+            <p className="mt-0.5 text-sm font-bold text-gray-900">{product.name}</p>
+            <p className="mt-0.5 text-xs text-gray-500">{variantLabel}</p>
+          </div>
+
+          {/* Plan breakdown */}
+          <div className="divide-y divide-gray-100 rounded-xl border border-gray-100">
+            {[
+              { label: "Monthly payment", value: fmt(plan.monthlyAmount) },
+              { label: "Tenure", value: `${plan.tenureMonths} months` },
+              { label: "Interest", value: plan.interestRate === 0 ? "0% — No-cost EMI" : `${plan.interestRate}% p.a.` },
+              { label: "Total payable", value: fmt(total) },
+              ...(plan.cashback && plan.cashback > 0
+                ? [
+                    { label: "Cashback", value: `− ${fmt(plan.cashback)}`, green: true },
+                    { label: "Net cost", value: fmt(net), bold: true },
+                  ]
+                : []),
+            ].map(({ label, value, green, bold }) => (
+              <div key={label} className="flex items-center justify-between px-4 py-2.5">
+                <span className="text-xs text-gray-500">{label}</span>
+                <span
+                  className={[
+                    "text-xs",
+                    bold ? "font-bold text-gray-900" : "font-medium text-gray-800",
+                    green ? "text-green-600" : "",
+                  ].join(" ")}
+                >
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-3 border-t border-gray-100 px-6 py-4">
+          <button
+            onClick={onCancel}
+            className="flex-1 rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
+          >
+            Go back
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 rounded-xl bg-blue-600 py-3 text-sm font-bold text-white shadow-md transition hover:bg-blue-700 active:scale-[0.98]"
+          >
+            Confirm &amp; Book
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Full-page loading skeleton */
 function Skeleton() {
   return (
@@ -265,6 +360,7 @@ export default function ProductPage() {
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
   const [toast, setToast] = useState<{ title: string; subtitle: string } | null>(null);
+  const [showModal, setShowModal] = useState(false);
   const mainImgRef = useRef<HTMLDivElement>(null);
 
   const showToast = useCallback((title: string, subtitle: string) => {
@@ -355,6 +451,12 @@ export default function ProductPage() {
 
   function handleProceed() {
     if (!selectedPlan) return;
+    setShowModal(true);
+  }
+
+  function handleConfirm() {
+    if (!selectedPlan) return;
+    setShowModal(false);
     const variantLabel = [variant.storage, variant.color].filter(Boolean).join(" · ");
     showToast(
       "Plan confirmed",
@@ -374,6 +476,15 @@ export default function ProductPage() {
     <div className="min-h-screen bg-gray-50">
       {toast && (
         <Toast title={toast.title} subtitle={toast.subtitle} onDismiss={() => setToast(null)} />
+      )}
+      {showModal && selectedPlan && (
+        <ConfirmModal
+          product={product}
+          variant={variant}
+          plan={selectedPlan}
+          onConfirm={handleConfirm}
+          onCancel={() => setShowModal(false)}
+        />
       )}
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
       <div className="border-b border-gray-200 bg-white">

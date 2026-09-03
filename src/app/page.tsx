@@ -30,7 +30,7 @@ async function getProducts(): Promise<ProductCard[]> {
         },
       },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: "asc" },
   });
 
   return products.map((p) => {

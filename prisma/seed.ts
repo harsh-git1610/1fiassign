@@ -23,13 +23,13 @@ async function main() {
         create: [
           {
             storage: "256GB",
-            color: "Natural Titanium",
+            color: "Cosmic Orange",
             mrp: 134900,
             price: 129900,
             imageUrl:
-              "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=800&q=80",
+              "/products/iphone1.png , /products/iphone2.avif , /products/iphone3.avif , /products/iphone4.avif , /products/iphone5.avif",
             emiPlans: {
-              create: [
+              create: [ 
                 {
                   tenureMonths: 3,
                   monthlyAmount: 43300,
@@ -69,7 +69,7 @@ async function main() {
             mrp: 154900,
             price: 149900,
             imageUrl:
-              "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=800&q=80",
+              "/products/iphone_b1.avif , /products/iphone_b2.avif , /products/iphone_b3.avif , /products/iphone_b4.avif , /products/iphone_b5.avif  ",
             emiPlans: {
               create: [
                 {
@@ -128,11 +128,11 @@ async function main() {
         create: [
           {
             storage: "256GB",
-            color: "Titanium Gray",
+            color: "Titanium Black",
             mrp: 134999,
             price: 124999,
             imageUrl:
-              "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=800&q=80",
+              "/products/s24_1.webp , /products/s24_2.webp , /products/s24_3.webp , /products/s24_4.webp , /products/s24_5.webp",
             emiPlans: {
               create: [
                 {
@@ -170,11 +170,11 @@ async function main() {
           },
           {
             storage: "512GB",
-            color: "Titanium Black",
+            color: "Titanium Violet",
             mrp: 144999,
             price: 134999,
             imageUrl:
-              "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=800&q=80",
+              "/products/s24v_1.webp , /products/s24v_2.webp , /products/s24v_3.webp , /products/s24v_4.webp , /products/s24v_5.webp",
             emiPlans: {
               create: [
                 {
@@ -221,23 +221,23 @@ async function main() {
     },
   });
 
-  // 3. Google Pixel 9 Pro (Google)
+  // 3. Google Pixel 11 (Google)
   const pixel = await prisma.product.create({
     data: {
-      name: "Google Pixel 9 Pro",
-      slug: "google-pixel-9-pro",
+      name: "Google Pixel 11",
+      slug: "google-pixel-11",
       brand: "Google",
       description:
-        "Engineered by Google with Gemini onboard, cutting-edge camera sensors, and elegant pro-level styling.",
+        "The next-generation Google Pixel 11 powered by Tensor G6, advanced Gemini on-device AI, revolutionary camera capabilities, and refined premium design.",
       variants: {
         create: [
           {
             storage: "128GB",
-            color: "Obsidian",
+            color: "Frost",
             mrp: 109999,
             price: 99999,
             imageUrl:
-              "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=800&q=80",
+              "/products/gp1.webp , /products/gp2.webp , /products/gp3.webp , /products/gp4.webp , /products/gp5.webp",
             emiPlans: {
               create: [
                 {
@@ -275,11 +275,11 @@ async function main() {
           },
           {
             storage: "256GB",
-            color: "Porcelain",
+            color: "Obsidian",
             mrp: 119999,
             price: 109999,
             imageUrl:
-              "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=800&q=80",
+              "/products/gpb1.webp , /products/gpb2.webp , /products/gpb3.webp , /products/gpb4.webp , /products/gpb5.webp",
             emiPlans: {
               create: [
                 {

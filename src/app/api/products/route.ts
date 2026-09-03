@@ -23,12 +23,16 @@ export async function GET() {
 
     const response = products.map((product) => {
       const firstVariant = product.variants[0];
+      let thumbnail = firstVariant?.imageUrl ?? null;
+      if (thumbnail && thumbnail.includes(",")) {
+        thumbnail = thumbnail.split(",")[0].trim();
+      }
       return {
         id: product.id,
         slug: product.slug,
         name: product.name,
         brand: product.brand,
-        thumbnail: firstVariant?.imageUrl ?? null,
+        thumbnail,
         startingPrice: firstVariant?.price ?? null,
       };
     });

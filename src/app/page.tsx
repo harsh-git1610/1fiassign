@@ -42,14 +42,20 @@ async function getProducts(): Promise<ProductCard[]> {
     orderBy: { createdAt: "desc" },
   });
 
-  return products.map((p) => ({
-    id: p.id,
-    slug: p.slug,
-    name: p.name,
-    brand: p.brand,
-    thumbnail: p.variants[0]?.imageUrl ?? null,
-    startingPrice: p.variants[0]?.price ?? null,
-  }));
+  return products.map((p) => {
+    let thumbnail = p.variants[0]?.imageUrl ?? null;
+    if (thumbnail && thumbnail.includes(",")) {
+      thumbnail = thumbnail.split(",")[0].trim();
+    }
+    return {
+      id: p.id,
+      slug: p.slug,
+      name: p.name,
+      brand: p.brand,
+      thumbnail,
+      startingPrice: p.variants[0]?.price ?? null,
+    };
+  });
 }
 
 export default async function HomePage() {
@@ -78,14 +84,14 @@ export default async function HomePage() {
                 className="group flex flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm transition-shadow hover:shadow-md"
               >
                 {/* Thumbnail */}
-                <div className="relative aspect-[4/3] w-full overflow-hidden bg-gray-50">
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-white">
                   {product.thumbnail ? (
                     <Image
                       src={product.thumbnail}
                       alt={product.name}
                       fill
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      className="object-contain p-6 transition-transform duration-300 group-hover:scale-105"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-gray-300">

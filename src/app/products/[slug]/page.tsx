@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -46,15 +46,23 @@ function formatINR(amount: number): string {
 }
 
 /**
- * Derive a 4-photo gallery from a single URL.
- * For Unsplash URLs, request different crop regions to get different frames.
- * For local /uploads/ URLs, just return the single image repeated
- * (thumbnails will all show the same image; users can upload more per variant
- * once a multi-image schema is added).
+ * Support multiple photos:
+ * 1. If imageUrl contains multiple URLs separated by commas or whitespace, parse them.
+ * 2. If it's an Unsplash URL, derive different angle/crop frames for showcase.
+ * 3. Otherwise return the image as-is.
  */
 function deriveGallery(imageUrl: string): string[] {
+  if (!imageUrl) return [];
+
+  // Check for comma-separated or space-separated multiple URLs
+  if (imageUrl.includes(",")) {
+    const urls = imageUrl.split(",").map((s) => s.trim()).filter(Boolean);
+    if (urls.length > 0) return urls;
+  }
+
   const isUnsplash = imageUrl.includes("unsplash.com");
   if (!isUnsplash) return [imageUrl];
+
   const base = imageUrl.split("?")[0];
   return [
     `${base}?auto=format&fit=crop&w=800&q=80`,
@@ -89,7 +97,7 @@ function Thumb({
           : "border-transparent hover:border-gray-300",
       ].join(" ")}
     >
-      <Image src={src} alt={alt} fill sizes="64px" className="object-cover" />
+      <Image src={src} alt={alt} fill sizes="64px" className="object-contain p-1" />
     </button>
   );
 }
@@ -225,12 +233,7 @@ export default function ProductPage() {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
-  const [uploadState, setUploadState] = useState<
-    "idle" | "uploading" | "error"
-  >("idle");
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const mainImgRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch product
   useEffect(() => {
@@ -313,62 +316,6 @@ export default function ProductPage() {
   const allStorage = [...new Set(product.variants.map((v) => v.storage).filter(Boolean))];
   const allColors = [...new Set(product.variants.map((v) => v.color).filter(Boolean))];
 
-  // ── Image upload ──────────────────────────────────────────────────────────
-
-  const handleUpload = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file || !variant) return;
-
-      setUploadState("uploading");
-      setUploadError(null);
-
-      try {
-        // 1. Upload file → get public URL
-        const form = new FormData();
-        form.append("file", file);
-        const uploadRes = await fetch("/api/upload", { method: "POST", body: form });
-        const uploadData = await uploadRes.json() as { url?: string; error?: string };
-        if (!uploadRes.ok) throw new Error(uploadData.error ?? "Upload failed.");
-        const imageUrl = uploadData.url!;
-
-        // 2. Persist new URL to the variant in DB
-        const patchRes = await fetch(`/api/variants/${variant.id}/image`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageUrl }),
-        });
-        if (!patchRes.ok) {
-          const d = await patchRes.json() as { error?: string };
-          throw new Error(d.error ?? "Failed to save image.");
-        }
-
-        // 3. Update local state so UI reflects new image immediately
-        setFetchState((prev) => {
-          if (prev.status !== "success") return prev;
-          return {
-            ...prev,
-            product: {
-              ...prev.product,
-              variants: prev.product.variants.map((v) =>
-                v.id === variant.id ? { ...v, imageUrl } : v
-              ),
-            },
-          };
-        });
-        setActivePhotoIndex(0);
-        setUploadState("idle");
-      } catch (err) {
-        setUploadState("error");
-        setUploadError(err instanceof Error ? err.message : "Upload failed.");
-      } finally {
-        // Reset file input so the same file can be re-selected if needed
-        if (fileInputRef.current) fileInputRef.current.value = "";
-      }
-    },
-    [variant]
-  );
-
   function handleProceed() {
     if (!selectedPlan) return;
     const lines = [
@@ -412,7 +359,7 @@ export default function ProductPage() {
               {/* Main image */}
               <div
                 ref={mainImgRef}
-                className="relative aspect-square w-full overflow-hidden bg-gray-50"
+                className="relative aspect-square w-full overflow-hidden bg-white"
               >
                 <Image
                   key={activePhoto}
@@ -421,7 +368,7 @@ export default function ProductPage() {
                   fill
                   priority
                   sizes="(max-width: 1024px) 100vw, 420px"
-                  className="object-cover transition-opacity duration-200"
+                  className="object-contain p-8 transition-opacity duration-200"
                 />
 
                 {/* Photo index badge */}
@@ -437,8 +384,8 @@ export default function ProductPage() {
                 )}
               </div>
 
-              {/* Thumbnail strip + upload button */}
-              <div className="flex items-center gap-2 overflow-x-auto px-3 pb-3 pt-2">
+              {/* Thumbnail strip */}
+              <div className="flex items-center gap-2 overflow-x-auto p-3">
                 {gallery.map((src, i) => (
                   <Thumb
                     key={i}
@@ -448,61 +395,7 @@ export default function ProductPage() {
                     onClick={() => setActivePhotoIndex(i)}
                   />
                 ))}
-
-                {/* Upload trigger button */}
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadState === "uploading"}
-                  title="Upload your own image"
-                  className={[
-                    "flex h-16 w-16 flex-shrink-0 flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-xs font-medium transition-all",
-                    uploadState === "uploading"
-                      ? "border-blue-300 bg-blue-50 text-blue-400"
-                      : "border-gray-300 bg-gray-50 text-gray-400 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-500",
-                  ].join(" ")}
-                >
-                  {uploadState === "uploading" ? (
-                    <>
-                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                      </svg>
-                      <span>Saving</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-                      </svg>
-                      <span>Upload</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Hidden file input */}
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/avif"
-                  className="hidden"
-                  onChange={handleUpload}
-                />
               </div>
-
-              {/* Upload error banner */}
-              {uploadState === "error" && uploadError && (
-                <div className="mx-3 mb-3 flex items-center justify-between rounded-lg bg-red-50 px-3 py-2">
-                  <p className="text-xs text-red-600">{uploadError}</p>
-                  <button
-                    type="button"
-                    onClick={() => { setUploadState("idle"); setUploadError(null); }}
-                    className="ml-2 text-xs text-red-400 hover:text-red-600"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 

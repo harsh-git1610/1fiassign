@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -193,6 +193,37 @@ function EmiCard({
   );
 }
 
+/** Toast notification */
+function Toast({
+  title,
+  subtitle,
+  onDismiss,
+}: {
+  title: string;
+  subtitle: string;
+  onDismiss: () => void;
+}) {
+  return (
+    <div className="fixed bottom-6 right-6 z-50 w-80 rounded-2xl bg-white px-5 py-4 shadow-2xl border border-gray-100">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-bold text-gray-900 truncate">{title}</p>
+          <p className="mt-0.5 text-sm text-gray-500 leading-snug">{subtitle}</p>
+        </div>
+        <button
+          onClick={onDismiss}
+          className="mt-0.5 flex-shrink-0 text-gray-400 transition-colors hover:text-gray-700"
+          aria-label="Dismiss"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Full-page loading skeleton */
 function Skeleton() {
   return (
@@ -233,7 +264,13 @@ export default function ProductPage() {
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [toast, setToast] = useState<{ title: string; subtitle: string } | null>(null);
   const mainImgRef = useRef<HTMLDivElement>(null);
+
+  const showToast = useCallback((title: string, subtitle: string) => {
+    setToast({ title, subtitle });
+    setTimeout(() => setToast(null), 5000);
+  }, []);
 
   // Fetch product
   useEffect(() => {
@@ -318,22 +355,26 @@ export default function ProductPage() {
 
   function handleProceed() {
     if (!selectedPlan) return;
-    const lines = [
-      `Product:  ${product.name}`,
-      `Variant:  ${[variant.storage, variant.color].filter(Boolean).join(" · ")}`,
-      `Plan:     ${selectedPlan.tenureMonths} months @ ${selectedPlan.interestRate === 0 ? "No-cost EMI" : `${selectedPlan.interestRate}% p.a.`}`,
-      `Monthly:  ${formatINR(selectedPlan.monthlyAmount)}`,
-      selectedPlan.cashback
-        ? `Cashback: ₹${selectedPlan.cashback.toLocaleString("en-IN")}`
-        : null,
-    ]
-      .filter(Boolean)
-      .join("\n");
-    alert(`✅ Proceeding with:\n\n${lines}`);
+    const variantLabel = [variant.storage, variant.color].filter(Boolean).join(" · ");
+    showToast(
+      "Plan confirmed",
+      `${product.name} (${variantLabel}) — ${formatINR(selectedPlan.monthlyAmount)}/mo × ${selectedPlan.tenureMonths} months`
+    );
   }
+
+  const totalPayable = selectedPlan
+    ? selectedPlan.monthlyAmount * selectedPlan.tenureMonths
+    : null;
+  const effectiveCost =
+    totalPayable && selectedPlan?.cashback
+      ? totalPayable - selectedPlan.cashback
+      : totalPayable;
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {toast && (
+        <Toast title={toast.title} subtitle={toast.subtitle} onDismiss={() => setToast(null)} />
+      )}
       {/* ── Top bar ─────────────────────────────────────────────────────── */}
       <div className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3 text-xs text-gray-500 sm:px-6 lg:px-8">
@@ -540,18 +581,49 @@ export default function ProductPage() {
             {/* ── CTA ────────────────────────────────────────────────────── */}
             <div className="sticky bottom-4 z-10 rounded-2xl border border-gray-200 bg-white p-4 shadow-lg sm:static sm:shadow-sm">
               {selectedPlan ? (
-                <div className="mb-3 rounded-lg bg-blue-50 px-4 py-2.5">
-                  <p className="text-xs font-medium text-blue-700">
-                    Selected plan:{" "}
-                    <strong>
-                      {formatINR(selectedPlan.monthlyAmount)}/mo ×{" "}
-                      {selectedPlan.tenureMonths} months
-                    </strong>
-                    {selectedPlan.interestRate === 0 && " · No-cost EMI"}
-                    {selectedPlan.cashback && (
-                      <> · ₹{selectedPlan.cashback.toLocaleString("en-IN")} cashback</>
-                    )}
+                <div className="mb-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-blue-600">
+                    EMI Summary
                   </p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                    <span className="text-gray-500">Monthly payment</span>
+                    <span className="text-right font-semibold text-gray-900">
+                      {formatINR(selectedPlan.monthlyAmount)}
+                    </span>
+
+                    <span className="text-gray-500">Tenure</span>
+                    <span className="text-right font-semibold text-gray-900">
+                      {selectedPlan.tenureMonths} months
+                    </span>
+
+                    <span className="text-gray-500">Interest rate</span>
+                    <span className="text-right font-semibold text-gray-900">
+                      {selectedPlan.interestRate === 0
+                        ? "0% (No-cost EMI)"
+                        : `${selectedPlan.interestRate}% p.a.`}
+                    </span>
+
+                    <span className="text-gray-500">Total payable</span>
+                    <span className="text-right font-semibold text-gray-900">
+                      {totalPayable !== null ? formatINR(totalPayable) : "—"}
+                    </span>
+
+                    {selectedPlan.cashback && selectedPlan.cashback > 0 && (
+                      <>
+                        <span className="text-gray-500">Cashback</span>
+                        <span className="text-right font-semibold text-green-600">
+                          − {formatINR(selectedPlan.cashback)}
+                        </span>
+
+                        <span className="border-t border-blue-100 pt-1.5 font-semibold text-gray-700">
+                          Net cost
+                        </span>
+                        <span className="border-t border-blue-100 pt-1.5 text-right font-bold text-gray-900">
+                          {effectiveCost !== null ? formatINR(effectiveCost) : "—"}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <p className="mb-3 text-center text-xs text-gray-400">

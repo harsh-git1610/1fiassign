@@ -354,7 +354,7 @@ export default function ProductPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[420px_1fr]">
 
           {/* ═══════════════════ LEFT: Image gallery ═══════════════════════ */}
-          <div className="lg:sticky lg:top-4 lg:self-start">
+          <div className="lg:sticky lg:top-24 lg:self-start">
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               {/* Main image */}
               <div
@@ -434,6 +434,9 @@ export default function ProductPage() {
                   </>
                 )}
               </div>
+              <p className="mt-2 text-sm font-medium text-gray-700">
+                EMI plans backed by mutual funds
+              </p>
               <p className="mt-1 text-xs text-gray-400">
                 Inclusive of all taxes. Free delivery.
               </p>

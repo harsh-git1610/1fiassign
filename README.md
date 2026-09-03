@@ -1,36 +1,142 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 1Fi SDE1 Assignment - E-commerce EMI Product Page
 
-## Getting Started
+A full-stack web application built for the 1Fi SDE1 Assignment. It dynamically displays products with their variants (storage/color) and fetches associated EMI plans from a PostgreSQL database.
 
-First, run the development server:
+## 🛠️ Tech Stack Used
 
+- **Frontend:** React 19, Next.js 16 (App Router), Tailwind CSS v4
+- **Backend:** Next.js Route Handlers (Node.js)
+- **Database:** PostgreSQL (Neon Serverless)
+- **ORM:** Prisma
+
+---
+
+## 🚀 Setup and Run Instructions
+
+### 1. Prerequisites
+Ensure you have the following installed:
+- Node.js (v20 or higher recommended)
+- npm or yarn
+
+### 2. Installation
+Clone the repository and install the dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <your-repo-url>
+cd 1fiassign
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Environment Variables
+Create a `.env` file in the root directory and add your PostgreSQL connection string:
+```env
+DATABASE_URL="postgresql://<user>:<password>@<host>/<database>?sslmode=require"
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. Database Setup
+Push the schema to your database and seed it with the mock data:
+```bash
+npx prisma db push
+npx prisma db seed
+```
+*(This will populate the database with the iPhone 17 Pro, Samsung Galaxy S24 Ultra, and Google Pixel 11, along with their variants and EMI plans).*
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 5. Run the Development Server
+Start the Next.js development server:
+```bash
+npm run dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 📡 API Endpoints and Example Responses
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### `GET /api/products`
+Retrieves a list of all products with their starting price and thumbnail image. Used to populate the home page grid.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Example Response:**
+```json
+[
+  {
+    "id": "cm0m7xxxx0000",
+    "slug": "iphone-17-pro",
+    "name": "iPhone 17 Pro",
+    "brand": "Apple",
+    "thumbnail": "/products/iphone1.png",
+    "startingPrice": 129900
+  }
+]
+```
 
-## Deploy on Vercel
+### `GET /api/products/[slug]`
+Retrieves full details for a specific product, including all its variants (colors and storage options) and their associated EMI plans.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Example Response:**
+```json
+{
+  "id": "cm0m7xxxx0000",
+  "slug": "iphone-17-pro",
+  "name": "iPhone 17 Pro",
+  "brand": "Apple",
+  "description": "The next-generation iPhone...",
+  "variants": [
+    {
+      "id": "cm0m7yyyy0000",
+      "storage": "256GB",
+      "color": "Cosmic Orange",
+      "mrp": 134900,
+      "price": 129900,
+      "imageUrl": "/products/iphone1.png , /products/iphone2.avif",
+      "emiPlans": [
+        {
+          "id": "cm0m7zzzz0000",
+          "tenureMonths": 3,
+          "monthlyAmount": 43300,
+          "interestRate": 0,
+          "cashback": 3000
+        }
+      ]
+    }
+  ]
+}
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🗄️ Schema Used
+
+The database is built using Prisma with the following schema:
+
+```prisma
+model Product {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  brand       String
+  description String?
+  createdAt   DateTime  @default(now())
+  variants    Variant[]
+}
+
+model Variant {
+  id        String    @id @default(cuid())
+  productId String
+  storage   String?
+  color     String?
+  mrp       Int
+  price     Int
+  imageUrl  String
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  emiPlans  EmiPlan[]
+}
+
+model EmiPlan {
+  id            String  @id @default(cuid())
+  variantId     String
+  monthlyAmount Int
+  tenureMonths  Int
+  interestRate  Float
+  cashback      Int?
+  variant       Variant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+}
+```

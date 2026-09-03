@@ -451,8 +451,11 @@ export default function ProductPage() {
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {allStorage.map((s) => {
-                      // pick first variant that matches this storage
-                      const match = product.variants.find((v) => v.storage === s);
+                      // pick variant that matches this storage (prefer same colour)
+                      const match =
+                        product.variants.find(
+                          (v) => v.storage === s && v.color === variant.color
+                        ) ?? product.variants.find((v) => v.storage === s);
                       return (
                         <VariantChip
                           key={s!}

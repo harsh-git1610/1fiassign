@@ -2,6 +2,8 @@
 
 A full-stack web application built for the 1Fi SDE1 Assignment. It dynamically displays products with their variants (storage/color) and fetches associated EMI plans from a PostgreSQL database.
 
+Explainer Video : [https://drive.google.com/file/d/1RJi8Cpz5BvGneH32bUcx6j8_26vAGBtO/view]
+
 ## 🛠️ Tech Stack Used
 
 - **Frontend:** React 19, Next.js 16 (App Router), Tailwind CSS v4

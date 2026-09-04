@@ -21,7 +21,7 @@ Ensure you have the following installed:
 ### 2. Installation
 Clone the repository and install the dependencies:
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/harsh-git1610/1fiassign
 cd 1fiassign
 npm install
 ```
